@@ -5,6 +5,8 @@
 #include "Utilities.h"
 #include <stdio.h>
 #include <vector>
+#include <set>
+#include <algorithm>
 
 using json = nlohmann::json;
 using namespace IO;
@@ -847,6 +849,107 @@ namespace MikuMikuWorld
 			sortHoldSteps(score, score.holdNotes.at(hold));
 
 		pushHistory("Shrink notes", prev, score);
+	}
+
+	void ScoreContext::compressSelection(Direction direction)
+	{
+		if (selectedNotes.size() < 2)
+			return;
+
+		enum class Type
+		{
+			Note,
+			HiSpeed
+		};
+
+		Score prev = score;
+
+		std::vector<std::pair<Type, int>> sortedSelection;
+		for (auto noteID : selectedNotes)
+			sortedSelection.push_back({ Type::Note, noteID });
+		for (auto hscID : selectedHiSpeedChanges)
+			sortedSelection.push_back({ Type::HiSpeed, hscID });
+		std::sort(sortedSelection.begin(), sortedSelection.end(),
+		          [this](auto a, auto b)
+		          {
+			          auto [aType, aId] = a;
+			          auto [bType, bId] = b;
+
+			          const int n1 = aType == Type::Note ? score.notes.at(aId).tick
+			                                             : score.hiSpeedChanges.at(aId).tick;
+			          const int n2 = bType == Type::Note ? score.notes.at(bId).tick
+			                                             : score.hiSpeedChanges.at(bId).tick;
+			          return n1 < n2;
+		          });
+
+		auto first = *sortedSelection.begin();
+		auto last = *sortedSelection.end();
+
+		int firstTick = first.first == Type::Note ? score.notes.at(first.second).tick
+		                                          : score.hiSpeedChanges.at(first.second).tick;
+		int lastTick = last.first == Type::Note ? score.notes.at(last.second).tick
+		                                        : score.hiSpeedChanges.at(last.second).tick;
+
+		// Used to know where to place the Hi-Speed changes
+		// and avoid placing multiple hi-speed changes in the same place
+		std::set<int> sortedNoteTickSet = {};
+		for (auto pair in sortedSelection) {
+			if (pair.first != Type::Note) {
+				continue;
+			}
+			// Since the list is already sorted, the set will also be sorted
+			// plus, since it's a set, there won't be any repeated values
+			sortedNoteTickSet.insert(score.notes.at(pair.second).tick);
+		}
+
+		for (int i = 0; i < sortedTickSet.sort() - 1; i++) {
+			int thisTick = sortedTickSet[i];
+			int nextTick = sortedTickSet[i+1];
+			float newSpeed = (nextTick - thisTick) / (lastTick - firstTick);
+			HiSpeedChange& hsc = std::find_if(sortedSelection.begin(), sortedSelection.end(),
+				  [this](const auto& e)
+		          {
+			        auto [type, id] = e;
+					
+					return e.first == Type::HiSpeed && score.hiSpeedChanges.at(id).tick == thisTick;
+		          });
+			if (hsc == score.hiSpeedChanges.end()) {
+				// A selected Hi-Speed doesn't exist at thisTick yet, so we create it
+				int id = nextHiSpeedID++;
+				score.hiSpeedChanges[id] = { id, thisTick, newSpeed, selectedLayer };
+			} else {
+				hsc.speed = newSpeed;
+			}
+		}
+
+		int factor = 1; // tick increment/decrement amount
+		if (direction == Direction::Up)
+		{
+			// start from the last note
+			std::reverse(sortedSelection.begin(), sortedSelection.end());
+			factor = -1;
+		}
+
+		for (int i = 0; i < sortedSelection.size(); ++i)
+		{
+
+			if (sortedSelection[i].first == Type::Note)
+			{
+				Note& note = score.notes.at(sortedSelection[i].second);
+				note.tick = firstTick + (i * factor);
+			}
+			else
+			{
+				HiSpeedChange& hsc = score.hiSpeedChanges.at(sortedSelection[i].second);
+				hsc.tick = firstTick + (i * factor);
+			}
+		}
+
+		const std::unordered_set<int> holds = getHoldsFromSelection();
+		for (const auto& hold : holds)
+			sortHoldSteps(score, score.holdNotes.at(hold));
+
+		pushHistory("Compress notes", prev, score);
 	}
 
 	void ScoreContext::connectHoldsInSelection()

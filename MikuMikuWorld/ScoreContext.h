@@ -145,6 +145,7 @@ namespace MikuMikuWorld
 		void cancelPaste();
 		void confirmPaste();
 		void shrinkSelection(Direction direction);
+		void compressSelection(Direction direction);
 
 		void connectHoldsInSelection();
 		void splitHoldInSelection();
