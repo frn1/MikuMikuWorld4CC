@@ -902,10 +902,10 @@ namespace MikuMikuWorld
 			sortedNoteTickSet.insert(score.notes.at(pair.second).tick);
 		}
 
-		for (int i = 0; i < sortedTickSet.sort() - 1; i++) {
-			int thisTick = sortedTickSet[i];
-			int nextTick = sortedTickSet[i+1];
-			float newSpeed = (nextTick - thisTick) / (lastTick - firstTick);
+		for (int i = 0; i < sortedNoteTickSet.sort() - 1; i++) {
+			int thisTick = sortedNoteTickSet[i];
+			int nextTick = sortedNoteTickSet[i+1];
+			float newSpeed = (float)(thisTick - nextTick) / (float)(sortedSelection.size());
 			HiSpeedChange& hsc = std::find_if(sortedSelection.begin(), sortedSelection.end(),
 				  [this](const auto& e)
 		          {

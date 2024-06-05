@@ -131,6 +131,8 @@ namespace MikuMikuWorld
 		{ "note_width", "Note Width" },
 		{ "shrink_down", "Shrink Down" },
 		{ "shrink_up", "Shrink Up" },
+		{ "compress_down", "Compress Down" },
+		{ "compress_up", "Compress Up" },
 		{ "connect_holds", "Connect Holds" },
 		{ "split_hold", "Split Hold" },
 		{ "lerp_hispeeds", "Interpolate Hi-Speeds" },

@@ -14,6 +14,8 @@ namespace MikuMikuWorld
 		MultiInputBinding increaseNoteSize = { "increase_note_size", {} };
 		MultiInputBinding shrinkDown = { "shrink_down", {} };
 		MultiInputBinding shrinkUp = { "shrink_up", {} };
+		MultiInputBinding compressDown = { "compress_down", {} };
+		MultiInputBinding compressUp = { "compress_up", {} };
 		MultiInputBinding connectHolds = { "connect_holds", {} };
 		MultiInputBinding splitHold = { "split_hold", {} };
 		MultiInputBinding lerpHiSpeeds = { "lerp_hispeeds", {} };
@@ -136,6 +138,8 @@ namespace MikuMikuWorld
 		&config.input.deleteSelection,
 		&config.input.shrinkDown,
 		&config.input.shrinkUp,
+		&config.input.compressDown,
+		&config.input.compressUp,
 		&config.input.connectHolds,
 		&config.input.splitHold,
 		&config.input.lerpHiSpeeds,
