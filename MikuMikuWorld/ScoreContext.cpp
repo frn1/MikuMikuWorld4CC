@@ -851,8 +851,7 @@ namespace MikuMikuWorld
 		pushHistory("Shrink notes", prev, score);
 	}
 
-	void ScoreContext::compressSelection(Direction direction)
-	{
+	void ScoreContext::scrollSpeedThingy() {
 		if (selectedNotes.size() < 2)
 			return;
 
@@ -882,30 +881,19 @@ namespace MikuMikuWorld
 			          return n1 < n2;
 		          });
 
-		auto first = *sortedSelection.begin();
-		auto last = *sortedSelection.end();
-
-		int firstTick = first.first == Type::Note ? score.notes.at(first.second).tick
-		                                          : score.hiSpeedChanges.at(first.second).tick;
-		int lastTick = last.first == Type::Note ? score.notes.at(last.second).tick
-		                                        : score.hiSpeedChanges.at(last.second).tick;
-
-		// Used to know where to place the Hi-Speed changes
-		// and avoid placing multiple hi-speed changes in the same place
-		std::set<int> sortedNoteTickSet = {};
-		for (auto pair in sortedSelection) {
-			if (pair.first != Type::Note) {
-				continue;
-			}
+		std::set<int> sortedTickSet = {};
+		for (auto pair : sortedSelection) {
 			// Since the list is already sorted, the set will also be sorted
 			// plus, since it's a set, there won't be any repeated values
-			sortedNoteTickSet.insert(score.notes.at(pair.second).tick);
+			sortedTickSet.insert(score.notes.at(pair.second).tick);
 		}
 
-		for (int i = 0; i < sortedNoteTickSet.sort() - 1; i++) {
-			int thisTick = sortedNoteTickSet[i];
-			int nextTick = sortedNoteTickSet[i+1];
-			float newSpeed = (float)(thisTick - nextTick) / (float)(sortedSelection.size());
+		float currentHiSpeed = 1.0;
+
+		for (int i = 0; i < sortedTickSet.size() - 1; i++) {
+			int thisTick = sortedTickSet[i];
+			int nextTick = sortedTickSet[i+1];
+			float newSpeed = currentHiSpeed * (float)(nextTick - thisTick);
 			HiSpeedChange& hsc = std::find_if(sortedSelection.begin(), sortedSelection.end(),
 				  [this](const auto& e)
 		          {
@@ -918,30 +906,9 @@ namespace MikuMikuWorld
 				int id = nextHiSpeedID++;
 				score.hiSpeedChanges[id] = { id, thisTick, newSpeed, selectedLayer };
 			} else {
+				currentHiSpeed = hsc.speed; // We had a Hi-Speed change in between, so we update the currentHiSpeed
+				newSpeed = currentHiSpeed * (float)(nextTick - thisTick); // Recalculate the newSpeed
 				hsc.speed = newSpeed;
-			}
-		}
-
-		int factor = 1; // tick increment/decrement amount
-		if (direction == Direction::Up)
-		{
-			// start from the last note
-			std::reverse(sortedSelection.begin(), sortedSelection.end());
-			factor = -1;
-		}
-
-		for (int i = 0; i < sortedSelection.size(); ++i)
-		{
-
-			if (sortedSelection[i].first == Type::Note)
-			{
-				Note& note = score.notes.at(sortedSelection[i].second);
-				note.tick = firstTick + (i * factor);
-			}
-			else
-			{
-				HiSpeedChange& hsc = score.hiSpeedChanges.at(sortedSelection[i].second);
-				hsc.tick = firstTick + (i * factor);
 			}
 		}
 
@@ -949,7 +916,11 @@ namespace MikuMikuWorld
 		for (const auto& hold : holds)
 			sortHoldSteps(score, score.holdNotes.at(hold));
 
-		pushHistory("Compress notes", prev, score);
+		pushHistory("Hi speed thingy", prev, score);
+	}
+
+	void ScoreContext::compressSelection(Direction direction)
+	{
 	}
 
 	void ScoreContext::connectHoldsInSelection()
